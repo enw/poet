@@ -125,3 +125,6 @@ dist/
 
 # Mac files
 .DS_Store
+
+# Development files
+.dev/

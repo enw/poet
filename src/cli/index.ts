@@ -2,6 +2,8 @@ import { Command } from 'commander';
 import { PoetAgent } from '../agent/poetAgent.js';
 import { OllamaService } from '../services/ollamaService.js';
 import type { LlmService } from '../services/llmService.js';
+import { ConfigService } from '../services/configService.js'; // New import
+import type { PoetConfig } from '../models/config.js'; // New import
 import pkg from '../../package.json' with { type: 'json' };
 import inquirer from 'inquirer';
 import type { DistinctQuestion } from 'inquirer';
@@ -33,7 +35,7 @@ const suggestedStyles = [
 /**
  * Runs the interactive setup process to collect parameters from the user.
  */
-async function runInteractiveMode() {
+async function runInteractiveMode(poetConfig: PoetConfig | null) {
   console.log('🤖 Starting interactive poem setup...');
   
   const availableModels = await new OllamaService('').listModels();
@@ -41,56 +43,56 @@ async function runInteractiveMode() {
 
   const questions: DistinctQuestion[] = [
     {
-      type: 'rawlist', // Changed from 'list'
+      type: 'rawlist',
       name: 'model',
       message: 'Select the LLM model to use:',
       choices: availableModels.length > 0 ? availableModels : ['No models found. Please run `ollama pull <model_name>`.'],
-      default: defaultModel,
-      when: availableModels.length > 0, // Only ask if models are available
+      default: poetConfig?.model || defaultModel, // Use config as default
+      when: availableModels.length > 0,
     },
     {
       type: 'input',
       name: 'title',
       message: 'Enter a title (or press Enter for a generated one):',
-      default: '',
+      default: poetConfig?.title || '', // Use config as default
     },
     {
       type: 'input',
       name: 'seedLine',
       message: 'Enter a seed line (or press Enter for a generated one):',
-      default: '',
+      default: poetConfig?.seedLine || '', // Use config as default
     },
     {
-      type: 'rawlist', // Changed from 'list'
+      type: 'rawlist',
       name: 'theme',
       message: 'Select a theme (or choose "Custom Theme" to type your own):',
-      choices: suggestedThemes.concat('Custom Theme'), // Simplified choices
-      default: 'Nature',
+      choices: suggestedThemes.concat('Custom Theme'),
+      default: poetConfig?.theme || 'Nature', // Use config as default
     },
     {
       type: 'input',
       name: 'customTheme',
       message: 'Enter your custom theme:',
-      when: (answers: any) => answers.theme === 'Custom Theme', // Changed type annotation
+      when: (answers: any) => answers.theme === 'Custom Theme',
     },
     {
-      type: 'rawlist', // Changed from 'list'
+      type: 'rawlist',
       name: 'style',
       message: 'Select a poetic style (or choose "Custom Style" to type your own):',
-      choices: suggestedStyles.concat('Custom Style'), // Simplified choices
-      default: 'Free Verse',
+      choices: suggestedStyles.concat('Custom Style'),
+      default: poetConfig?.style || 'Free Verse', // Use config as default
     },
     {
       type: 'input',
       name: 'customStyle',
       message: 'Enter your custom style:',
-      when: (answers: any) => answers.style === 'Custom Style', // Changed type annotation
+      when: (answers: any) => answers.style === 'Custom Style',
     },
   ];
 
   const answers = await inquirer.prompt(questions);
 
-  const finalModel = answers.model || defaultModel; // Fallback if no models were listed
+  const finalModel = answers.model || defaultModel;
   const finalTheme = answers.theme === 'Custom Theme' ? answers.customTheme : answers.theme;
   const finalStyle = answers.style === 'Custom Style' ? answers.customStyle : answers.style;
 
@@ -111,10 +113,9 @@ async function runInteractiveMode() {
 
 /**
  * Runs the standard non-interactive mode based on CLI flags.
- * @param options - The options object from Commander.
  */
-async function runStandardMode(options: { [key: string]: any }) {
-  let modelName = options.model;
+async function runStandardMode(options: { [key: string]: any }, poetConfig: PoetConfig | null) {
+  let modelName = options.model || poetConfig?.model; // Use config as default
   if (!modelName) {
     console.log('🤖 No model specified, attempting to find the best available model...');
     modelName = await OllamaService.findBestAvailableModel();
@@ -126,10 +127,10 @@ async function runStandardMode(options: { [key: string]: any }) {
   const llmService: LlmService = new OllamaService(modelName);
   const agent = new PoetAgent(llmService);
   await agent.run({
-    title: options.title,
-    seedLine: options.seedLine,
-    theme: options.theme,
-    style: options.style,
+    title: options.title || poetConfig?.title, // Use config as default
+    seedLine: options.seedLine || poetConfig?.seedLine, // Use config as default
+    theme: options.theme || poetConfig?.theme, // Use config as default
+    style: options.style || poetConfig?.style, // Use config as default
   });
 }
 
@@ -137,6 +138,8 @@ async function runStandardMode(options: { [key: string]: any }) {
 
 export async function runCli() {
   const program = new Command();
+  const configService = new ConfigService(); // Instantiate ConfigService
+  const poetConfig = await configService.loadConfig(); // Load config
 
   program
     .name('poet')
@@ -155,9 +158,9 @@ export async function runCli() {
     .action(async (options) => {
       try {
         if (options.interactive) {
-          await runInteractiveMode();
+          await runInteractiveMode(poetConfig); // Pass config
         } else {
-          await runStandardMode(options);
+          await runStandardMode(options, poetConfig); // Pass config
         }
       } catch (error) {
         handleError(error);
@@ -177,6 +180,30 @@ export async function runCli() {
         } else {
           models.forEach(model => console.log(`  - ${model}`));
         }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // New command: save-config
+  program
+    .command('save-config')
+    .description('Save current settings to a .poet file for future use.')
+    .option('-m, --model <model_name>', 'Model to save.')
+    .option('-t, --title <poem_title>', 'Title to save.')
+    .option('-s, --seed-line <famous_line>', 'Seed line to save.')
+    .option('--theme <theme>', 'Theme to save.')
+    .option('--style <style>', 'Style to save.')
+    .action(async (options) => {
+      try {
+        const configToSave: PoetConfig = {
+          model: options.model,
+          title: options.title,
+          seedLine: options.seedLine,
+          theme: options.theme,
+          style: options.style,
+        };
+        await configService.saveConfig(configToSave);
       } catch (error) {
         handleError(error);
       }
