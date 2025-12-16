@@ -98,6 +98,12 @@ async function runInteractiveMode(poetConfig: PoetConfig | null, userBio: string
       message: 'Enter your custom style:',
       when: (answers: any) => answers.style === 'Custom Style',
     },
+    {
+      type: 'input',
+      name: 'guidance',
+      message: 'Enter any additional guidance for the poem (or press Enter to skip):',
+      default: '',
+    },
   ];
 
   const answers = await inquirer.prompt(questions);
@@ -119,6 +125,7 @@ async function runInteractiveMode(poetConfig: PoetConfig | null, userBio: string
   console.log(`\n✅ Using model: ${finalModel}`);
   if (finalTheme) console.log(`✅ Theme: ${finalTheme}`);
   if (finalStyle) console.log(`✅ Style: ${finalStyle}`);
+  if (answers.guidance) console.log(`✅ Guidance: ${answers.guidance}`);
   console.log('\n');
 
   const llmService: LlmService = new OllamaService(finalModel);
@@ -128,7 +135,8 @@ async function runInteractiveMode(poetConfig: PoetConfig | null, userBio: string
     seedLine: answers.seedLine, 
     theme: finalTheme, 
     style: finalStyle,
-    userBio: userBio || undefined // Pass userBio
+    userBio: userBio || undefined, // Pass userBio
+    guidance: answers.guidance || undefined // Pass guidance
   });
 }
 
@@ -165,7 +173,8 @@ async function runStandardMode(options: { [key: string]: any }, poetConfig: Poet
     seedLine: options.seedLine || poetConfig?.seedLine,
     theme: theme,
     style: style,
-    userBio: userBio || undefined // Pass userBio
+    userBio: userBio || undefined, // Pass userBio
+    guidance: options.guidance // Pass guidance
   });
 }
 
@@ -193,6 +202,7 @@ export async function runCli() {
     .option('-s, --seed-line <famous_line>', 'Seed the poem with a specific starting line.')
     .option('--theme <theme>', 'Guide the poem with a specific theme.')
     .option('--style <style>', 'Guide the poem with a specific style (e.g., "haiku").')
+    .option('-g, --guidance <guidance>', 'Provide free-form guidance for the poem (e.g., "make it about dancing in the autumn").')
     .option('-i, --interactive', 'Run in interactive mode to set up the poem.')
     .action(async (options) => {
       try {

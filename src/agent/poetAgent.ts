@@ -7,6 +7,7 @@ interface RunOptions {
   theme?: string;
   style?: string;
   userBio?: string; // Added userBio to RunOptions
+  guidance?: string; // Free-form guidance for the poem
 }
 
 /**
@@ -15,6 +16,7 @@ interface RunOptions {
 export class PoetAgent {
   // The agent depends on the LlmService abstraction, not a concrete implementation.
   private userBio?: string; // Added userBio property
+  private guidance?: string; // Free-form guidance for the poem
 
   constructor(private llmService: LlmService) {}
 
@@ -24,8 +26,9 @@ export class PoetAgent {
    * @returns The completed Poem object.
    */
   public async run(options: RunOptions = {}): Promise<Poem> {
-    const { title, seedLine, theme, style, userBio } = options;
+    const { title, seedLine, theme, style, userBio, guidance } = options;
     this.userBio = userBio; // Assign userBio to property
+    this.guidance = guidance; // Store guidance
     console.log('✨ Starting poem generation...');
 
     const finalTitle = title || await this.generateTitle(theme);
@@ -74,6 +77,9 @@ export class PoetAgent {
     if (theme && theme.toLowerCase() !== 'random') {
       prompt += ` The theme of the poem is "${theme}".`;
     }
+    if (this.guidance) {
+      prompt += ` Additional guidance: ${this.guidance}`;
+    }
     prompt += ' Respond with only the title itself, without any extra text or quotation marks.';
     
     const title = await this.llmService.generate(prompt);
@@ -84,6 +90,9 @@ export class PoetAgent {
     let prompt = `\n      Provide a single, famous, and thought-provoking quote from a well-known public figure \n      (e.g., a poet, scientist, politician, artist, or a line from a movie).\n`;
     if (this.userBio) { // Use userBio in prompt
       prompt += ` The quote should resonate with someone who is: ${this.userBio}.`;
+    }
+    if (this.guidance) {
+      prompt += ` Consider this guidance when selecting the quote: ${this.guidance}.`;
     }
     prompt += `\n      Respond with only the quote itself, without any extra text or quotation marks.\n    `;
     const line = await this.llmService.generate(prompt);
@@ -101,6 +110,10 @@ export class PoetAgent {
 
     if (theme && theme.toLowerCase() !== 'random') {
       prompt += `\nThe poem's theme must be: ${theme}.`;
+    }
+
+    if (this.guidance) {
+      prompt += `\nAdditional guidance for this poem: ${this.guidance}`;
     }
 
     if (style && style.toLowerCase() !== 'random') {
