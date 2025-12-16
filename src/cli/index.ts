@@ -3,6 +3,9 @@ import { PoetAgent } from '../agent/poetAgent.js';
 import { OllamaService } from '../services/ollamaService.js';
 import type { LlmService } from '../services/llmService.js';
 import pkg from '../../package.json' with { type: 'json' };
+import * as readline from 'readline';
+
+// --- Helper Functions ---
 
 function handleError(error: unknown) {
   if (error instanceof Error) {
@@ -12,6 +15,72 @@ function handleError(error: unknown) {
   }
   process.exit(1);
 }
+
+/**
+ * Asks a question to the user and returns their answer, or a default value.
+ */
+function askQuestion(rl: readline.Interface, query: string, defaultValue: string): Promise<string> {
+  return new Promise(resolve => {
+    rl.question(query, answer => {
+      resolve(answer || defaultValue);
+    });
+  });
+}
+
+// --- CLI Modes ---
+
+/**
+ * Runs the interactive setup process to collect parameters from the user.
+ */
+async function runInteractiveMode() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  console.log('🤖 Starting interactive poem setup...');
+  
+  const defaultModel = await OllamaService.findBestAvailableModel();
+  const modelName = await askQuestion(rl, `Enter the model to use (default: ${defaultModel}): `, defaultModel);
+
+  const title = await askQuestion(rl, 'Enter a title (or press Enter for a generated one): ', '');
+  const seedLine = await askQuestion(rl, 'Enter a seed line (or press Enter for a generated one): ', '');
+  const theme = await askQuestion(rl, 'Enter a theme (e.g., "love", "nature", or leave blank): ', '');
+  const style = await askQuestion(rl, 'Enter a style (e.g., "haiku", "sonnet", or leave blank): ', '');
+
+  rl.close();
+
+  console.log(`\n✅ Using model: ${modelName}\n`);
+
+  const llmService: LlmService = new OllamaService(modelName);
+  const agent = new PoetAgent(llmService);
+  await agent.run({ title, seedLine, theme, style });
+}
+
+/**
+ * Runs the standard non-interactive mode based on CLI flags.
+ */
+async function runStandardMode(options: { [key: string]: any }) {
+  let modelName = options.model;
+  if (!modelName) {
+    console.log('🤖 No model specified, attempting to find the best available model...');
+    modelName = await OllamaService.findBestAvailableModel();
+    console.log(`✅ Found model: ${modelName}\n`);
+  } else {
+    console.log(`🤖 Using specified model: ${modelName}\n`);
+  }
+
+  const llmService: LlmService = new OllamaService(modelName);
+  const agent = new PoetAgent(llmService);
+  await agent.run({
+    title: options.title,
+    seedLine: options.seedLine,
+    theme: options.theme,
+    style: options.style,
+  });
+}
+
+// --- Main CLI Execution ---
 
 export async function runCli() {
   const program = new Command();
@@ -23,24 +92,20 @@ export async function runCli() {
 
   program
     .command('create', { isDefault: true })
-    .description('Create a new poem (default command).')
+    .description('Create a new poem.')
     .option('-m, --model <model_name>', 'Specify the Ollama model to use.')
     .option('-t, --title <poem_title>', 'Seed the poem with a specific title.')
     .option('-s, --seed-line <famous_line>', 'Seed the poem with a specific starting line.')
+    .option('--theme <theme>', 'Guide the poem with a specific theme.')
+    .option('--style <style>', 'Guide the poem with a specific style (e.g., "haiku").')
+    .option('-i, --interactive', 'Run in interactive mode to set up the poem.')
     .action(async (options) => {
       try {
-        let modelName = options.model;
-        if (!modelName) {
-          console.log('🤖 No model specified, attempting to find the best available model...');
-          modelName = await OllamaService.findBestAvailableModel();
-          console.log(`✅ Found model: ${modelName}\n`);
+        if (options.interactive) {
+          await runInteractiveMode();
         } else {
-          console.log(`🤖 Using specified model: ${modelName}\n`);
+          await runStandardMode(options);
         }
-
-        const llmService: LlmService = new OllamaService(modelName);
-        const agent = new PoetAgent(llmService);
-        await agent.run(options.title, options.seedLine);
       } catch (error) {
         handleError(error);
       }
@@ -51,7 +116,6 @@ export async function runCli() {
     .description('List all available models from the local Ollama instance.')
     .action(async () => {
       try {
-        // A model name is required by the constructor, but not used by listModels.
         const service = new OllamaService(''); 
         const models = await service.listModels();
         console.log('Available Ollama models:');
