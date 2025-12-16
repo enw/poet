@@ -3,7 +3,8 @@ import { PoetAgent } from '../agent/poetAgent.js';
 import { OllamaService } from '../services/ollamaService.js';
 import type { LlmService } from '../services/llmService.js';
 import pkg from '../../package.json' with { type: 'json' };
-import * as readline from 'readline';
+import inquirer from 'inquirer';
+import type { DistinctQuestion } from 'inquirer';
 
 // --- Helper Functions ---
 
@@ -16,16 +17,16 @@ function handleError(error: unknown) {
   process.exit(1);
 }
 
-/**
- * Asks a question to the user and returns their answer, or a default value.
- */
-function askQuestion(rl: readline.Interface, query: string, defaultValue: string): Promise<string> {
-  return new Promise(resolve => {
-    rl.question(query, answer => {
-      resolve(answer || defaultValue);
-    });
-  });
-}
+// Suggested themes and styles for interactive mode
+const suggestedThemes = [
+  'Nature', 'Love', 'Technology', 'Existentialism', 'Urban Life',
+  'Dreams', 'Loss', 'Hope', 'Adventure', 'Solitude', 'Time', 'Memory'
+];
+
+const suggestedStyles = [
+  'Free Verse', 'Haiku', 'Sonnet', 'Limerick', 'Blank Verse',
+  'Ode', 'Elegy', 'Ballad', 'Sestina', 'Acrostic', 'Hip-Hop'
+];
 
 // --- CLI Modes ---
 
@@ -33,32 +34,84 @@ function askQuestion(rl: readline.Interface, query: string, defaultValue: string
  * Runs the interactive setup process to collect parameters from the user.
  */
 async function runInteractiveMode() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
   console.log('🤖 Starting interactive poem setup...');
   
+  const availableModels = await new OllamaService('').listModels();
   const defaultModel = await OllamaService.findBestAvailableModel();
-  const modelName = await askQuestion(rl, `Enter the model to use (default: ${defaultModel}): `, defaultModel);
 
-  const title = await askQuestion(rl, 'Enter a title (or press Enter for a generated one): ', '');
-  const seedLine = await askQuestion(rl, 'Enter a seed line (or press Enter for a generated one): ', '');
-  const theme = await askQuestion(rl, 'Enter a theme (e.g., "love", "nature", or leave blank): ', '');
-  const style = await askQuestion(rl, 'Enter a style (e.g., "haiku", "sonnet", or leave blank): ', '');
+  const questions: DistinctQuestion[] = [
+    {
+      type: 'rawlist', // Changed from 'list'
+      name: 'model',
+      message: 'Select the LLM model to use:',
+      choices: availableModels.length > 0 ? availableModels : ['No models found. Please run `ollama pull <model_name>`.'],
+      default: defaultModel,
+      when: availableModels.length > 0, // Only ask if models are available
+    },
+    {
+      type: 'input',
+      name: 'title',
+      message: 'Enter a title (or press Enter for a generated one):',
+      default: '',
+    },
+    {
+      type: 'input',
+      name: 'seedLine',
+      message: 'Enter a seed line (or press Enter for a generated one):',
+      default: '',
+    },
+    {
+      type: 'rawlist', // Changed from 'list'
+      name: 'theme',
+      message: 'Select a theme (or choose "Custom Theme" to type your own):',
+      choices: suggestedThemes.concat('Custom Theme'), // Simplified choices
+      default: 'Nature',
+    },
+    {
+      type: 'input',
+      name: 'customTheme',
+      message: 'Enter your custom theme:',
+      when: (answers: any) => answers.theme === 'Custom Theme', // Changed type annotation
+    },
+    {
+      type: 'rawlist', // Changed from 'list'
+      name: 'style',
+      message: 'Select a poetic style (or choose "Custom Style" to type your own):',
+      choices: suggestedStyles.concat('Custom Style'), // Simplified choices
+      default: 'Free Verse',
+    },
+    {
+      type: 'input',
+      name: 'customStyle',
+      message: 'Enter your custom style:',
+      when: (answers: any) => answers.style === 'Custom Style', // Changed type annotation
+    },
+  ];
 
-  rl.close();
+  const answers = await inquirer.prompt(questions);
 
-  console.log(`\n✅ Using model: ${modelName}\n`);
+  const finalModel = answers.model || defaultModel; // Fallback if no models were listed
+  const finalTheme = answers.theme === 'Custom Theme' ? answers.customTheme : answers.theme;
+  const finalStyle = answers.style === 'Custom Style' ? answers.customStyle : answers.style;
 
-  const llmService: LlmService = new OllamaService(modelName);
+  console.log(`\n✅ Using model: ${finalModel}`);
+  if (finalTheme) console.log(`✅ Theme: ${finalTheme}`);
+  if (finalStyle) console.log(`✅ Style: ${finalStyle}`);
+  console.log('\n');
+
+  const llmService: LlmService = new OllamaService(finalModel);
   const agent = new PoetAgent(llmService);
-  await agent.run({ title, seedLine, theme, style });
+  await agent.run({ 
+    title: answers.title, 
+    seedLine: answers.seedLine, 
+    theme: finalTheme, 
+    style: finalStyle 
+  });
 }
 
 /**
  * Runs the standard non-interactive mode based on CLI flags.
+ * @param options - The options object from Commander.
  */
 async function runStandardMode(options: { [key: string]: any }) {
   let modelName = options.model;
