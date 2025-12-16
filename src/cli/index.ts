@@ -2,8 +2,9 @@ import { Command } from 'commander';
 import { PoetAgent } from '../agent/poetAgent.js';
 import { OllamaService } from '../services/ollamaService.js';
 import type { LlmService } from '../services/llmService.js';
-import { ConfigService } from '../services/configService.js'; // New import
-import type { PoetConfig } from '../models/config.js'; // New import
+import { ConfigService } from '../services/configService.js';
+import type { PoetConfig } from '../models/config.js';
+import { BioService } from '../services/bioService.js';
 import pkg from '../../package.json' with { type: 'json' };
 import inquirer from 'inquirer';
 import type { DistinctQuestion } from 'inquirer';
@@ -35,9 +36,12 @@ const suggestedStyles = [
 /**
  * Runs the interactive setup process to collect parameters from the user.
  */
-async function runInteractiveMode(poetConfig: PoetConfig | null) {
+async function runInteractiveMode(poetConfig: PoetConfig | null, userBio: string | null) {
   console.log('🤖 Starting interactive poem setup...');
-  
+  if (userBio) {
+    console.log(`✅ Loaded user bio from ~/.me.toon\n`);
+  }
+
   const availableModels = await new OllamaService('').listModels();
   const defaultModel = await OllamaService.findBestAvailableModel();
 
@@ -103,19 +107,20 @@ async function runInteractiveMode(poetConfig: PoetConfig | null) {
 
   const llmService: LlmService = new OllamaService(finalModel);
   const agent = new PoetAgent(llmService);
-  await agent.run({ 
-    title: answers.title, 
-    seedLine: answers.seedLine, 
-    theme: finalTheme, 
-    style: finalStyle 
+  await agent.run({
+    title: answers.title,
+    seedLine: answers.seedLine,
+    theme: finalTheme,
+    style: finalStyle,
+    userBio: userBio || undefined
   });
 }
 
 /**
  * Runs the standard non-interactive mode based on CLI flags.
  */
-async function runStandardMode(options: { [key: string]: any }, poetConfig: PoetConfig | null) {
-  let modelName = options.model || poetConfig?.model; // Use config as default
+async function runStandardMode(options: { [key: string]: any }, poetConfig: PoetConfig | null, userBio: string | null) {
+  let modelName = options.model || poetConfig?.model;
   if (!modelName) {
     console.log('🤖 No model specified, attempting to find the best available model...');
     modelName = await OllamaService.findBestAvailableModel();
@@ -127,10 +132,11 @@ async function runStandardMode(options: { [key: string]: any }, poetConfig: Poet
   const llmService: LlmService = new OllamaService(modelName);
   const agent = new PoetAgent(llmService);
   await agent.run({
-    title: options.title || poetConfig?.title, // Use config as default
-    seedLine: options.seedLine || poetConfig?.seedLine, // Use config as default
-    theme: options.theme || poetConfig?.theme, // Use config as default
-    style: options.style || poetConfig?.style, // Use config as default
+    title: options.title || poetConfig?.title,
+    seedLine: options.seedLine || poetConfig?.seedLine,
+    theme: options.theme || poetConfig?.theme,
+    style: options.style || poetConfig?.style,
+    userBio: userBio || undefined
   });
 }
 
@@ -138,8 +144,12 @@ async function runStandardMode(options: { [key: string]: any }, poetConfig: Poet
 
 export async function runCli() {
   const program = new Command();
-  const configService = new ConfigService(); // Instantiate ConfigService
-  const poetConfig = await configService.loadConfig(); // Load config
+  const configService = new ConfigService();
+  const poetConfig = await configService.loadConfig();
+
+  const bioService = new BioService();
+  const userBioData = await bioService.loadBio();
+  const userBio = userBioData?.content || null;
 
   program
     .name('poet')
@@ -158,9 +168,9 @@ export async function runCli() {
     .action(async (options) => {
       try {
         if (options.interactive) {
-          await runInteractiveMode(poetConfig); // Pass config
+          await runInteractiveMode(poetConfig, userBio);
         } else {
-          await runStandardMode(options, poetConfig); // Pass config
+          await runStandardMode(options, poetConfig, userBio);
         }
       } catch (error) {
         handleError(error);

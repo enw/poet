@@ -9,6 +9,7 @@ An iterative CLI poet that generates poems **line by line** using a local LLM. W
 - 🎯 **Interactive Mode** - TUI-like prompts to customize every aspect of poem generation
 - ⚡ **Smart Completion** - Detects when poems feel finished based on narrative arc and structure
 - 💾 **Config Persistence** - Save your favorite settings to `.poet` files for quick reuse
+- 👤 **Personalization** - Create a `~/.me.toon` bio file to personalize generated poems with your perspective
 - 📝 **Multiple Styles** - Built-in support for Haiku (3 lines), Sonnet (14 lines), Free Verse, and more
 
 ## Quick Start
@@ -90,6 +91,33 @@ poet save-config \
 
 Saves these defaults to `~/.poet` for future use. Future poem generations will use these saved settings.
 
+### Personalize with Your Bio
+
+Create a `~/.me.toon` file to personalize poems with your unique perspective:
+
+```bash
+echo "A software engineer obsessed with poetry and moonlit walks" > ~/.me.toon
+```
+
+The CLI will automatically load this file and incorporate your bio into:
+- **Title Generation** - Creates titles that reflect who you are
+- **Seed Line Selection** - Chooses quotes that resonate with your perspective
+- **Poem Generation** - All subsequent lines are written from your point of view
+
+**Example `~/.me.toon` content:**
+```
+A jazz musician from New Orleans, passionate about improvisation and storytelling
+```
+
+When you run `poet create`, the LLM will use this bio to infuse your poems with authenticity:
+
+```bash
+poet create --theme "Music"
+# The generated poem will reflect a jazz musician's voice and perspective
+```
+
+All poems generated will naturally embody your unique voice and experience.
+
 ## How It Works
 
 ### Architecture
@@ -126,6 +154,7 @@ Ollama API (local LLM)
 |------|---------|
 | `src/agent/poetAgent.ts` | Main poem generation orchestrator |
 | `src/services/ollamaService.ts` | Ollama API wrapper |
+| `src/services/bioService.ts` | Loads user bio from `~/.me.toon` |
 | `src/models/poem.ts` | Poem data structure |
 | `src/cli/index.ts` | Command-line interface |
 | `src/services/configService.ts` | Loads/saves `.poet` config files |
@@ -172,12 +201,15 @@ pnpm test -- --testNamePattern="<test name>"
 
 ## Configuration
 
-The `.poet` config file is stored at:
+### Settings: `.poet` File
+
+The `.poet` config file stores your default poem generation settings:
+
+**Location:**
 - **Linux/Mac**: `~/.poet`
 - **Windows**: `%USERPROFILE%\.poet`
 
-Example config:
-
+**Example:**
 ```json
 {
   "model": "mistral",
@@ -189,6 +221,21 @@ Example config:
 ```
 
 All CLI flags override config file settings.
+
+### Bio: `.me.toon` File
+
+The `.me.toon` file contains your biographical information, used to personalize generated poems:
+
+**Location:**
+- **Linux/Mac**: `~/.me.toon`
+- **Windows**: `%USERPROFILE%\.me.toon`
+
+**Example:**
+```
+A poet living in Portland, deeply inspired by rain and small moments of wonder
+```
+
+Keep it concise (1-2 sentences) for best results. This will be automatically loaded and used in poem generation.
 
 ## Examples
 
@@ -229,6 +276,14 @@ poet create \
 ```bash
 poet save-config --model neural-chat --theme "Urban Life" --style "Hip-Hop"
 poet create  # Uses saved settings automatically
+```
+
+### Generate with Personalized Bio
+
+```bash
+echo "A curious engineer obsessed with the stars and dark matter" > ~/.me.toon
+poet create --theme "Science"
+# The generated poem will reflect your perspective as an engineer fascinated by physics
 ```
 
 ## Requirements

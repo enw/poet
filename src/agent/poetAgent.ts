@@ -6,6 +6,7 @@ interface RunOptions {
   seedLine?: string;
   theme?: string;
   style?: string;
+  userBio?: string;
 }
 
 /**
@@ -13,6 +14,8 @@ interface RunOptions {
  */
 export class PoetAgent {
   // The agent depends on the LlmService abstraction, not a concrete implementation.
+  private userBio?: string;
+
   constructor(private llmService: LlmService) {}
 
   /**
@@ -21,7 +24,8 @@ export class PoetAgent {
    * @returns The completed Poem object.
    */
   public async run(options: RunOptions = {}): Promise<Poem> {
-    const { title, seedLine, theme, style } = options;
+    const { title, seedLine, theme, style, userBio } = options;
+    this.userBio = userBio;
     console.log('✨ Starting poem generation...');
 
     const finalTitle = title || await this.generateTitle(theme);
@@ -53,19 +57,26 @@ export class PoetAgent {
 
   private async generateTitle(theme?: string): Promise<string> {
     let prompt = 'Generate a short, evocative title for a new poem. The title should be two to five words.';
+    if (this.userBio) {
+      prompt += ` The poem is written by: ${this.userBio}`;
+    }
     if (theme) {
       prompt += ` The theme of the poem is "${theme}".`;
     }
     prompt += ' Respond with only the title itself, without any extra text or quotation marks.';
-    
+
     const title = await this.llmService.generate(prompt);
     return title.trim().replace(/"/g, '');
   }
 
   private async generateSeedLine(): Promise<string> {
-    const prompt = `
-      Provide a single, famous, and thought-provoking quote from a well-known public figure 
-      (e.g., a poet, scientist, politician, artist, or a line from a movie). 
+    let prompt = `
+      Provide a single, famous, and thought-provoking quote from a well-known public figure
+      (e.g., a poet, scientist, politician, artist, or a line from a movie).`;
+    if (this.userBio) {
+      prompt += ` The quote should resonate with someone who is: ${this.userBio}`;
+    }
+    prompt += `
       Respond with only the quote itself, without any extra text or quotation marks.
     `;
     const line = await this.llmService.generate(prompt);
@@ -78,7 +89,14 @@ export class PoetAgent {
       ---
       Title: ${poem.title}
       ${poem.lines.join('\n')}
-      ---
+      ---`;
+
+    if (this.userBio) {
+      prompt += `
+      The poet's perspective: ${this.userBio}`;
+    }
+
+    prompt += `
       Your task is to add the next single line to continue the poem.
       The line should be creative and fit the existing theme and rhythm.
       The poem should have a clear narrative arc.
@@ -98,7 +116,7 @@ export class PoetAgent {
     }
 
     prompt += '\nRespond with only the single new line, without any extra text or quotation marks.';
-    
+
     const nextLine = await this.llmService.generate(prompt);
     return nextLine.trim();
   }
