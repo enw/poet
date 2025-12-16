@@ -25,6 +25,19 @@ export class PoetAgent {
    * @param options - Configuration for the run.
    * @returns The completed Poem object.
    */
+  /**
+   * Extracts a target line count from guidance text (e.g., "24 lines long" -> 24)
+   */
+  private extractLineCount(guidance?: string): number | null {
+    if (!guidance) return null;
+    const match = guidance.match(/(\d+)\s*lines?\s*(long|in length|total)?/i);
+    if (match) {
+      const count = parseInt(match[1], 10);
+      return count > 0 ? count : null;
+    }
+    return null;
+  }
+
   public async run(options: RunOptions = {}): Promise<Poem> {
     const { title, seedLine, theme, style, userBio, guidance } = options;
     this.userBio = userBio; // Assign userBio to property
@@ -41,14 +54,23 @@ export class PoetAgent {
 
     let isComplete = false;
     let maxLines = 12; // Default max lines
-    const lowerCaseStyle = style?.toLowerCase();
-    if (lowerCaseStyle && lowerCaseStyle !== 'random') {
-      if (lowerCaseStyle === 'haiku') {
-        maxLines = 3;
-      } else if (lowerCaseStyle === 'limerick') {
-        maxLines = 5;
-      } else if (lowerCaseStyle === 'sonnet') {
-        maxLines = 14;
+    
+    // Check if guidance specifies a line count
+    const guidanceLineCount = this.extractLineCount(guidance);
+    if (guidanceLineCount) {
+      maxLines = guidanceLineCount;
+      console.log(`📏 Target length from guidance: ${maxLines} lines\n`);
+    } else {
+      // Otherwise, use style-based limits
+      const lowerCaseStyle = style?.toLowerCase();
+      if (lowerCaseStyle && lowerCaseStyle !== 'random') {
+        if (lowerCaseStyle === 'haiku') {
+          maxLines = 3;
+        } else if (lowerCaseStyle === 'limerick') {
+          maxLines = 5;
+        } else if (lowerCaseStyle === 'sonnet') {
+          maxLines = 14;
+        }
       }
     }
 
@@ -57,10 +79,20 @@ export class PoetAgent {
       poem.addLine(nextLine);
       console.log(nextLine);
       
-      // Only check for completion after a minimum number of lines have been generated.
-      // Or if the poem has reached its style-defined length.
-      if (poem.lines.length >= 3 || poem.lines.length === maxLines) {
-        isComplete = await this.checkIfComplete(poem, style);
+      // If guidance specifies a length, only check for completion when we've reached it
+      // Otherwise, check after minimum 3 lines or when reaching max lines
+      const guidanceLineCount = this.extractLineCount(this.guidance);
+      if (guidanceLineCount) {
+        // For guidance-specified lengths, only check completion once we've reached the target
+        if (poem.lines.length >= guidanceLineCount) {
+          isComplete = await this.checkIfComplete(poem, style);
+        }
+        // Continue generating until we reach the target (don't allow early completion)
+      } else {
+        // No guidance length specified, use normal completion check
+        if (poem.lines.length >= 3 || poem.lines.length >= maxLines) {
+          isComplete = await this.checkIfComplete(poem, style);
+        }
       }
     }
 
@@ -78,7 +110,7 @@ export class PoetAgent {
       prompt += ` The theme of the poem is "${theme}".`;
     }
     if (this.guidance) {
-      prompt += ` Additional guidance: ${this.guidance}`;
+      prompt += ` IMPORTANT: Follow this guidance carefully - ${this.guidance}`;
     }
     prompt += ' Respond with only the title itself, without any extra text or quotation marks.';
     
@@ -92,7 +124,7 @@ export class PoetAgent {
       prompt += ` The quote should resonate with someone who is: ${this.userBio}.`;
     }
     if (this.guidance) {
-      prompt += ` Consider this guidance when selecting the quote: ${this.guidance}.`;
+      prompt += ` IMPORTANT: Consider this guidance when selecting the quote - ${this.guidance}.`;
     }
     prompt += `\n      Respond with only the quote itself, without any extra text or quotation marks.\n    `;
     const line = await this.llmService.generate(prompt);
@@ -113,7 +145,7 @@ export class PoetAgent {
     }
 
     if (this.guidance) {
-      prompt += `\nAdditional guidance for this poem: ${this.guidance}`;
+      prompt += `\n\n*** CRITICAL GUIDANCE - FOLLOW THIS CAREFULLY ***\n${this.guidance}\n*** END OF GUIDANCE ***\n\n`;
     }
 
     if (style && style.toLowerCase() !== 'random') {
@@ -160,6 +192,16 @@ export class PoetAgent {
   }
 
   private async checkIfComplete(poem: Poem, style?: string): Promise<boolean> {
+    // Check if guidance specifies a line count
+    const guidanceLineCount = this.extractLineCount(this.guidance);
+    
+    // If guidance specifies a length, we should only reach this check when we've met the length
+    // So we can allow completion, but still check if it feels complete
+    if (guidanceLineCount && poem.lines.length < guidanceLineCount) {
+      // Shouldn't happen due to loop logic, but safety check
+      return false;
+    }
+    
     const lowerCaseStyle = style?.toLowerCase();
     if (lowerCaseStyle && lowerCaseStyle !== 'random') {
       if (lowerCaseStyle === 'haiku' && poem.lines.length >= 3) {
@@ -173,7 +215,31 @@ export class PoetAgent {
       }
     }
 
-    const prompt = `\n      Here is a poem:\n      ---\n      Title: ${poem.title}\n      ${poem.lines.join('\n')}\n      ---\n      Considering its narrative arc and thematic development, does this poem feel complete and finished?\n      The poem should not end abruptly. It should feel resolved.\n      Answer with only the word "yes" or "no".\n    `;
+    let prompt = `\n      Here is a poem:\n      ---\n      Title: ${poem.title}\n      ${poem.lines.join('\n')}\n      ---\n      The poem currently has ${poem.lines.length} lines.\n      \n`;
+    
+    if (guidanceLineCount) {
+      // When guidance specifies a length, make it absolutely clear
+      if (poem.lines.length >= guidanceLineCount) {
+        prompt += `*** CRITICAL REQUIREMENT: The guidance specified that the poem MUST be ${guidanceLineCount} lines long. The poem now has ${poem.lines.length} lines, which meets this requirement. ***\n\n`;
+        prompt += `Considering its narrative arc and thematic development, does this poem feel complete and finished now that it has reached the required length of ${guidanceLineCount} lines?\n`;
+      } else {
+        prompt += `*** CRITICAL: The guidance requires the poem to be ${guidanceLineCount} lines long, but it currently only has ${poem.lines.length} lines. ***\n\n`;
+        prompt += `The poem is NOT complete yet because it has not reached the required length. Answer "no".\n`;
+        // Return false immediately if we haven't reached the required length
+        return false;
+      }
+    } else {
+      prompt += `Considering its narrative arc and thematic development, does this poem feel complete and finished?\n      The poem should not end abruptly. It should feel resolved.\n    `;
+    }
+    
+    if (this.guidance && !guidanceLineCount) {
+      // If there's guidance but no length specified, include it normally
+      prompt += `\n\n*** IMPORTANT GUIDANCE TO CONSIDER: ${this.guidance} ***\n`;
+      prompt += `When determining if the poem is complete, you MUST consider whether it satisfies the guidance above.\n`;
+    }
+    
+    prompt += `\nAnswer with only the word "yes" or "no".\n    `;
+    
     const response = await this.llmService.generate(prompt);
     return response.trim().toLowerCase().includes('yes');
   }
