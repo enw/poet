@@ -38,12 +38,15 @@ export class PoetAgent {
 
     let isComplete = false;
     let maxLines = 12; // Default max lines
-    if (style?.toLowerCase() === 'haiku') {
-      maxLines = 3;
-    } else if (style?.toLowerCase() === 'limerick') {
-      maxLines = 5;
-    } else if (style?.toLowerCase() === 'sonnet') {
-      maxLines = 14;
+    const lowerCaseStyle = style?.toLowerCase();
+    if (lowerCaseStyle && lowerCaseStyle !== 'random') {
+      if (lowerCaseStyle === 'haiku') {
+        maxLines = 3;
+      } else if (lowerCaseStyle === 'limerick') {
+        maxLines = 5;
+      } else if (lowerCaseStyle === 'sonnet') {
+        maxLines = 14;
+      }
     }
 
     while (!isComplete && poem.lines.length < maxLines) {
@@ -64,11 +67,11 @@ export class PoetAgent {
   }
 
   private async generateTitle(theme?: string): Promise<string> {
-    let prompt = 'Generate a short, evocative title for a new poem. The title should be two to five words.';
+    let prompt = 'Generate a short, evocative, and highly original title for a new poem. The title should be two to five words. Be creative and unexpected—avoid clichés and common phrases. Use unusual word combinations, surprising imagery, or abstract concepts. Make it memorable and distinct.';
     if (this.userBio) { // Use userBio in prompt
       prompt += ` The poem is written by someone with the following perspective: ${this.userBio}.`;
     }
-    if (theme) {
+    if (theme && theme.toLowerCase() !== 'random') {
       prompt += ` The theme of the poem is "${theme}".`;
     }
     prompt += ' Respond with only the title itself, without any extra text or quotation marks.';
@@ -96,11 +99,11 @@ export class PoetAgent {
 
     prompt += `\n      Your task is to add the next single line to continue the poem.\n      The line should be creative and fit the existing theme and rhythm.\n      The poem should have a clear narrative arc.\n    `;
 
-    if (theme) {
+    if (theme && theme.toLowerCase() !== 'random') {
       prompt += `\nThe poem's theme must be: ${theme}.`;
     }
 
-    if (style) {
+    if (style && style.toLowerCase() !== 'random') {
       const lowerCaseStyle = style.toLowerCase();
       prompt += `\nThe poem must be in the style of a ${style}. Adhere strictly to its structure, rhythm, and rhyme scheme.`;
 
@@ -145,14 +148,16 @@ export class PoetAgent {
 
   private async checkIfComplete(poem: Poem, style?: string): Promise<boolean> {
     const lowerCaseStyle = style?.toLowerCase();
-    if (lowerCaseStyle === 'haiku' && poem.lines.length >= 3) {
-      return true;
-    }
-    if (lowerCaseStyle === 'limerick' && poem.lines.length >= 5) {
-      return true;
-    }
-    if (lowerCaseStyle === 'sonnet' && poem.lines.length >= 14) {
-      return true;
+    if (lowerCaseStyle && lowerCaseStyle !== 'random') {
+      if (lowerCaseStyle === 'haiku' && poem.lines.length >= 3) {
+        return true;
+      }
+      if (lowerCaseStyle === 'limerick' && poem.lines.length >= 5) {
+        return true;
+      }
+      if (lowerCaseStyle === 'sonnet' && poem.lines.length >= 14) {
+        return true;
+      }
     }
 
     const prompt = `\n      Here is a poem:\n      ---\n      Title: ${poem.title}\n      ${poem.lines.join('\n')}\n      ---\n      Considering its narrative arc and thematic development, does this poem feel complete and finished?\n      The poem should not end abruptly. It should feel resolved.\n      Answer with only the word "yes" or "no".\n    `;

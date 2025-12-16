@@ -23,13 +23,19 @@ function handleError(error: unknown) {
 // Suggested themes and styles for interactive mode
 const suggestedThemes = [
   'Nature', 'Love', 'Technology', 'Existentialism', 'Urban Life',
-  'Dreams', 'Loss', 'Hope', 'Adventure', 'Solitude', 'Time', 'Memory'
+  'Dreams', 'Loss', 'Hope', 'Adventure', 'Solitude', 'Time', 'Memory', 'Random'
 ];
 
 const suggestedStyles = [
   'Free Verse', 'Haiku', 'Sonnet', 'Limerick', 'Blank Verse',
-  'Ode', 'Elegy', 'Ballad', 'Sestina', 'Acrostic', 'Hip-Hop'
+  'Ode', 'Elegy', 'Ballad', 'Sestina', 'Acrostic', 'Hip-Hop', 'Random'
 ];
+
+// Helper function to get a random selection from an array
+function getRandomSelection<T>(array: T[], excludeItems: T[] = []): T {
+  const filtered = array.filter(item => !excludeItems.includes(item));
+  return filtered[Math.floor(Math.random() * filtered.length)];
+}
 
 // --- CLI Modes ---
 
@@ -97,8 +103,18 @@ async function runInteractiveMode(poetConfig: PoetConfig | null, userBio: string
   const answers = await inquirer.prompt(questions);
 
   const finalModel = answers.model || defaultModel;
-  const finalTheme = answers.theme === 'Custom Theme' ? answers.customTheme : answers.theme;
-  const finalStyle = answers.style === 'Custom Style' ? answers.customStyle : answers.style;
+  let finalTheme = answers.theme === 'Custom Theme' ? answers.customTheme : answers.theme;
+  let finalStyle = answers.style === 'Custom Style' ? answers.customStyle : answers.style;
+
+  // Handle "Random" selections
+  if (finalTheme === 'Random') {
+    finalTheme = getRandomSelection(suggestedThemes, ['Random', 'Custom Theme']);
+    console.log(`\n🎲 Random theme selected: ${finalTheme}`);
+  }
+  if (finalStyle === 'Random') {
+    finalStyle = getRandomSelection(suggestedStyles, ['Random', 'Custom Style']);
+    console.log(`🎲 Random style selected: ${finalStyle}`);
+  }
 
   console.log(`\n✅ Using model: ${finalModel}`);
   if (finalTheme) console.log(`✅ Theme: ${finalTheme}`);
@@ -129,13 +145,26 @@ async function runStandardMode(options: { [key: string]: any }, poetConfig: Poet
     console.log(`🤖 Using specified model: ${modelName}\n`);
   }
 
+  // Handle "Random" selections for theme and style
+  let theme = options.theme || poetConfig?.theme;
+  let style = options.style || poetConfig?.style;
+
+  if (theme === 'Random') {
+    theme = getRandomSelection(suggestedThemes, ['Random']);
+    console.log(`🎲 Random theme selected: ${theme}`);
+  }
+  if (style === 'Random') {
+    style = getRandomSelection(suggestedStyles, ['Random']);
+    console.log(`🎲 Random style selected: ${style}`);
+  }
+
   const llmService: LlmService = new OllamaService(modelName);
   const agent = new PoetAgent(llmService);
   await agent.run({
     title: options.title || poetConfig?.title,
     seedLine: options.seedLine || poetConfig?.seedLine,
-    theme: options.theme || poetConfig?.theme,
-    style: options.style || poetConfig?.style,
+    theme: theme,
+    style: style,
     userBio: userBio || undefined // Pass userBio
   });
 }
