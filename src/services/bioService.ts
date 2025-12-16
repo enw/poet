@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
-const BIO_FILE_NAME = '.me.toon';
+const BIO_FILE_NAME = '.me.toon'; // As mentioned by the user
 
 export interface UserBio {
   content: string;
@@ -15,20 +15,15 @@ export class BioService {
     this.bioFilePath = path.join(os.homedir(), BIO_FILE_NAME);
   }
 
-  /**
-   * Loads the user bio from the ~/.me.toon file.
-   * @returns The user bio or null if not found.
-   */
   public async loadBio(): Promise<UserBio | null> {
     try {
       const content = await fs.readFile(this.bioFilePath, { encoding: 'utf-8' });
       return { content: content.trim() };
     } catch (error: any) {
       if (error.code === 'ENOENT') {
-        // File not found, which is expected if user hasn't created one
-        return null;
+        return null; // File not found
       }
-      console.error(`Error loading bio from ${this.bioFilePath}:`, error.message);
+      console.error(`Error loading user bio from ${this.bioFilePath}:`, error.message);
       return null;
     }
   }

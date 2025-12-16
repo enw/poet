@@ -10,7 +10,7 @@ An iterative CLI poet that generates poems **line by line** using a local LLM. W
 - ⚡ **Smart Completion** - Detects when poems feel finished based on narrative arc and structure
 - 💾 **Config Persistence** - Save your favorite settings to `.poet` files for quick reuse
 - 👤 **Personalization** - Create a `~/.me.toon` bio file to personalize generated poems with your perspective
-- 📝 **Multiple Styles** - Built-in support for Haiku (3 lines), Sonnet (14 lines), Free Verse, and more
+- 📝 **Multiple Styles** - Built-in support for Haiku (3 lines), Limerick (5 lines), Sonnet (14 lines), Free Verse, and more with structure-aware generation
 
 ## Quick Start
 
@@ -138,14 +138,19 @@ Ollama API (local LLM)
 
 ### Generation Flow
 
-1. **Title Generation** - Creates an evocative title (optionally themed)
-2. **Seed Line** - Generates a famous quote or provided seed
+1. **Title Generation** - Creates an evocative title (optionally themed and personalized by bio)
+2. **Seed Line** - Generates a famous quote or provided seed (resonates with user's perspective if bio provided)
 3. **Iterative Expansion** - Loops to generate next lines:
    - Rebuilds context with all previous lines
    - Maintains theme and style constraints
+   - Applies structure rules (rhyme scheme, syllable count, rhythm)
+   - Incorporates user's voice and perspective throughout
    - Checks completion criteria
 4. **Completion** - Stops when:
-   - Poem reaches max lines (12 default, 3 for Haiku, 14 for Sonnet)
+   - Haiku reaches 3 lines (5-7-5 syllables enforced)
+   - Limerick reaches 5 lines (AABBA rhyme scheme)
+   - Sonnet reaches 14 lines (ABAB CDCD EFEF GG rhyme scheme)
+   - Default max 12 lines for free verse
    - LLM declares the poem "complete" based on narrative arc
 
 ### Key Files
@@ -252,6 +257,25 @@ Title: Winter's Silence
 Snowflakes gently fall
 White blanket covers the earth
 Quiet beauty rests
+--------------------
+✒️ Poem finished.
+```
+
+### Generate a Limerick
+
+```bash
+poet create --style "Limerick" --theme "Humor"
+```
+
+**Output:**
+```
+Title: A Curious Tale
+--------------------
+There once was a coder named Fred
+Who wrote all his code while in bed
+With a keyboard in hand
+The results were quite grand
+And the bugs were all brilliantly spread
 --------------------
 ✒️ Poem finished.
 ```

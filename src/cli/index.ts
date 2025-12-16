@@ -2,9 +2,9 @@ import { Command } from 'commander';
 import { PoetAgent } from '../agent/poetAgent.js';
 import { OllamaService } from '../services/ollamaService.js';
 import type { LlmService } from '../services/llmService.js';
-import { ConfigService } from '../services/configService.js';
-import type { PoetConfig } from '../models/config.js';
-import { BioService } from '../services/bioService.js';
+import { ConfigService } from '../services/configService.js'; // New import
+import type { PoetConfig } from '../models/config.js'; // New import
+import { BioService } from '../services/bioService.js'; // New import
 import pkg from '../../package.json' with { type: 'json' };
 import inquirer from 'inquirer';
 import type { DistinctQuestion } from 'inquirer';
@@ -41,7 +41,7 @@ async function runInteractiveMode(poetConfig: PoetConfig | null, userBio: string
   if (userBio) {
     console.log(`✅ Loaded user bio from ~/.me.toon\n`);
   }
-
+  
   const availableModels = await new OllamaService('').listModels();
   const defaultModel = await OllamaService.findBestAvailableModel();
 
@@ -107,12 +107,12 @@ async function runInteractiveMode(poetConfig: PoetConfig | null, userBio: string
 
   const llmService: LlmService = new OllamaService(finalModel);
   const agent = new PoetAgent(llmService);
-  await agent.run({
-    title: answers.title,
-    seedLine: answers.seedLine,
-    theme: finalTheme,
+  await agent.run({ 
+    title: answers.title, 
+    seedLine: answers.seedLine, 
+    theme: finalTheme, 
     style: finalStyle,
-    userBio: userBio || undefined
+    userBio: userBio || undefined // Pass userBio
   });
 }
 
@@ -136,7 +136,7 @@ async function runStandardMode(options: { [key: string]: any }, poetConfig: Poet
     seedLine: options.seedLine || poetConfig?.seedLine,
     theme: options.theme || poetConfig?.theme,
     style: options.style || poetConfig?.style,
-    userBio: userBio || undefined
+    userBio: userBio || undefined // Pass userBio
   });
 }
 
@@ -144,11 +144,11 @@ async function runStandardMode(options: { [key: string]: any }, poetConfig: Poet
 
 export async function runCli() {
   const program = new Command();
-  const configService = new ConfigService();
-  const poetConfig = await configService.loadConfig();
+  const configService = new ConfigService(); // Instantiate ConfigService
+  const poetConfig = await configService.loadConfig(); // Load config
 
-  const bioService = new BioService();
-  const userBioData = await bioService.loadBio();
+  const bioService = new BioService(); // Instantiate BioService
+  const userBioData = await bioService.loadBio(); // Load user bio
   const userBio = userBioData?.content || null;
 
   program
@@ -168,9 +168,9 @@ export async function runCli() {
     .action(async (options) => {
       try {
         if (options.interactive) {
-          await runInteractiveMode(poetConfig, userBio);
+          await runInteractiveMode(poetConfig, userBio); // Pass config and userBio
         } else {
-          await runStandardMode(options, poetConfig, userBio);
+          await runStandardMode(options, poetConfig, userBio); // Pass config and userBio
         }
       } catch (error) {
         handleError(error);
