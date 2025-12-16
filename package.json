@@ -1,0 +1,37 @@
+{
+  "name": "my-poet",
+  "version": "1.0.0",
+  "description": "An iterative poet that creates poems line by line using a local LLM.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "poet": "dist/index.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "pnpm build && pnpm start"
+  },
+  "keywords": [
+    "ai",
+    "poetry",
+    "llm",
+    "ollama",
+    "cli"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^14.0.2",
+    "ollama": "^0.6.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.2",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"
+}
