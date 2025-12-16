@@ -1,26 +1,51 @@
-# 🖋️ my-poet
+# 🚀 my-poet — Real‑Time Local AI Poetry Engine
 
-An iterative CLI poet that generates poems **line by line** using a local LLM. Watch as an AI creates original poetry in real-time, with themes, styles, and emergent structure.
+**my-poet turns your terminal into a tiny, local-first poetry studio.** It orchestrates a local LLM (via Ollama) to **compose poems line by line in real time**, with structure, style, and voice that bend around *you*.
 
-## Features
+No cloud, no tracking, no mysterious black box product team—just **raw, iterative AI text generation** you can see, shape, and hack.
 
-- 🤖 **Local LLM Generation** - Uses Ollama for private, on-device poetry creation
-- 🎨 **Themable & Styleable** - Guide poems with custom themes (Nature, Love, Tech, etc.) and poetic styles (Haiku, Sonnet, Free Verse, etc.)
-- 🎯 **Interactive Mode** - TUI-like prompts to customize every aspect of poem generation
-- ⚡ **Smart Completion** - Detects when poems feel finished based on narrative arc and structure
-- 💾 **Config Persistence** - Save your favorite settings to `.poet` files for quick reuse
-- 👤 **Personalization** - Create a `~/.me.toon` bio file to personalize generated poems with your perspective
-- 📝 **Multiple Styles** - Built-in support for Haiku (3 lines), Limerick (5 lines), Sonnet (14 lines), Free Verse, and more with structure-aware generation
+- **Not another chat UI**: it’s a *poem generator pipeline* you own end-to-end.
+- **Not “AI magic” marketing**: it’s TypeScript + Ollama + a focused agent loop.
+- **Feels bigger than a toy**, but honest enough to admit it’s a tiny, weird poetry machine.
 
-## Quick Start
+---
+
+## ✨ What It Actually Does
+
+An iterative CLI poet that generates poems **line by line** using a local LLM. Watch as an AI creates original poetry in real time, with themes, styles, and emergent structure.
+
+### Core Capabilities
+
+- 🤖 **Local-Only LLM Generation**  
+  Uses **Ollama** for private, on-device poetry creation. Your text never leaves your machine.
+- 🎨 **Themable & Styleable**  
+  Guide poems with custom **themes** (Nature, Love, Tech, etc.) and **poetic styles** (Haiku, Sonnet, Free Verse, etc.).
+- 🕹️ **Interactive Creation Flow**  
+  TUI-like prompts to customize each poem before generation.
+- ⚡ **Structure-Aware Completion**  
+  The agent stops when the poem “feels done” based on line count, form rules, and completion signals from the LLM.
+- 💾 **Config Persistence**  
+  Save your favorite settings to a `.poet` file and reuse them instantly.
+- 👤 **Bio-Aware Personalization**  
+  Drop a `~/.me.toon` bio file and the system steers generations toward your voice and perspective.
+- 📝 **Multiple Poetic Forms**  
+  Built‑in support for Haiku, Limerick, Sonnet, Free Verse, and more, with structure-aware prompts.
+
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
 
 - **Node.js** 18+
 - **Ollama** running locally ([install here](https://ollama.ai))
-- At least one Ollama model (e.g., `ollama pull mistral`)
+- At least one Ollama model (for example):
 
-### Installation
+```bash
+ollama pull mistral
+```
+
+### Install the CLI
 
 ```bash
 npm install -g my-poet
@@ -36,7 +61,9 @@ poet create
 
 The CLI will auto-detect your best available Ollama model and generate an interactive poem.
 
-## Usage
+---
+
+## 🧑‍💻 Usage
 
 ### Default: Interactive Mode
 
@@ -44,16 +71,17 @@ The CLI will auto-detect your best available Ollama model and generate an intera
 poet create --interactive
 ```
 
-You'll be prompted to:
-1. Select an LLM model
-2. Optionally provide a title
-3. Optionally provide a seed line
-4. Choose a theme (Nature, Love, Technology, etc.)
-5. Choose a poetic style (Free Verse, Haiku, Sonnet, etc.)
+You’ll be guided through:
+
+1. Selecting an LLM model
+2. Optionally providing a title
+3. Optionally providing a seed line
+4. Choosing a theme (Nature, Love, Technology, etc.)
+5. Choosing a poetic style (Free Verse, Haiku, Sonnet, etc.)
 
 ### Command Flags
 
-Generate a poem with specific parameters:
+Generate a poem with explicit parameters:
 
 ```bash
 poet create \
@@ -65,12 +93,13 @@ poet create \
 ```
 
 **Available options:**
-- `-m, --model <name>` - Specify Ollama model
-- `-t, --title <title>` - Custom poem title
-- `-s, --seed-line <line>` - Starting line (overrides seed generation)
-- `--theme <theme>` - Guide the poem's topic
-- `--style <style>` - Poetry format (Haiku, Sonnet, Free Verse, etc.)
-- `-i, --interactive` - Interactive setup mode
+
+- `-m, --model <name>` – Specify Ollama model
+- `-t, --title <title>` – Custom poem title
+- `-s, --seed-line <line>` – Starting line (overrides seed generation)
+- `--theme <theme>` – Guide the poem’s topic
+- `--style <style>` – Poetry format (Haiku, Sonnet, Free Verse, etc.)
+- `-i, --interactive` – Interactive setup mode
 
 ### List Available Models
 
@@ -89,7 +118,7 @@ poet save-config \
   --style "Hip-Hop"
 ```
 
-Saves these defaults to `~/.poet` for future use. Future poem generations will use these saved settings.
+Saves these defaults to `~/.poet` for future use. Future poem generations will use these saved settings unless you override them with flags.
 
 ### Personalize with Your Bio
 
@@ -100,31 +129,34 @@ echo "A software engineer obsessed with poetry and moonlit walks" > ~/.me.toon
 ```
 
 The CLI will automatically load this file and incorporate your bio into:
-- **Title Generation** - Creates titles that reflect who you are
-- **Seed Line Selection** - Chooses quotes that resonate with your perspective
-- **Poem Generation** - All subsequent lines are written from your point of view
+
+- **Title Generation** – Titles that reflect who you are
+- **Seed Line Selection** – Quotes that resonate with your perspective
+- **Poem Generation** – Lines written from your point of view
 
 **Example `~/.me.toon` content:**
-```
+
+```text
 A jazz musician from New Orleans, passionate about improvisation and storytelling
 ```
 
-When you run `poet create`, the LLM will use this bio to infuse your poems with authenticity:
+When you run:
 
 ```bash
 poet create --theme "Music"
-# The generated poem will reflect a jazz musician's voice and perspective
 ```
 
-All poems generated will naturally embody your unique voice and experience.
+…the generated poem will lean into a jazz musician’s voice and perspective. All poems generated will naturally tend toward your unique voice and experience.
 
-## How It Works
+---
 
-### Architecture
+## 🧬 How It Works Under the Hood
 
-The app uses a **service-based architecture** for flexibility:
+### High-Level Architecture
 
-```
+my-poet uses a **service-based architecture** so you can swap out pieces without rewriting everything:
+
+```text
 CLI (Commander.js)
   ↓
 PoetAgent (orchestrates poem generation)
@@ -138,33 +170,39 @@ Ollama API (local LLM)
 
 ### Generation Flow
 
-1. **Title Generation** - Creates an evocative title (optionally themed and personalized by bio)
-2. **Seed Line** - Generates a famous quote or provided seed (resonates with user's perspective if bio provided)
-3. **Iterative Expansion** - Loops to generate next lines:
+1. **Title Generation**  
+   Creates an evocative title (optionally themed and personalized via bio).
+2. **Seed Line**  
+   Generates a quote/seed line or uses your provided one, tuned to your perspective if a bio exists.
+3. **Iterative Expansion**  
+   Loops to generate subsequent lines:
    - Rebuilds context with all previous lines
    - Maintains theme and style constraints
-   - Applies structure rules (rhyme scheme, syllable count, rhythm)
-   - Incorporates user's voice and perspective throughout
-   - Checks completion criteria
-4. **Completion** - Stops when:
-   - Haiku reaches 3 lines (5-7-5 syllables enforced)
-   - Limerick reaches 5 lines (AABBA rhyme scheme)
-   - Sonnet reaches 14 lines (ABAB CDCD EFEF GG rhyme scheme)
-   - Default max 12 lines for free verse
-   - LLM declares the poem "complete" based on narrative arc
+   - Applies structural hints (rhyme scheme, syllable expectations, rhythm cues)
+   - Incorporates the user’s voice and perspective
+   - Checks completion signals from the LLM
+4. **Completion Logic**  
+   Stops when one of the following holds:
+   - Haiku reaches 3 lines (5–7–5 syllable pattern is encouraged via prompts)
+   - Limerick reaches 5 lines (AABBA structure guidance)
+   - Sonnet reaches 14 lines (ABAB CDCD EFEF GG pattern guidance)
+   - Default max of 12 lines for free verse
+   - LLM indicates that the poem is complete based on narrative arc
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/agent/poetAgent.ts` | Main poem generation orchestrator |
-| `src/services/ollamaService.ts` | Ollama API wrapper |
-| `src/services/bioService.ts` | Loads user bio from `~/.me.toon` |
-| `src/models/poem.ts` | Poem data structure |
-| `src/cli/index.ts` | Command-line interface |
-| `src/services/configService.ts` | Loads/saves `.poet` config files |
+| File                        | Purpose                                   |
+|-----------------------------|-------------------------------------------|
+| `src/agent/poetAgent.ts`    | Main poem generation orchestrator         |
+| `src/services/ollamaService.ts` | Ollama API wrapper                    |
+| `src/services/bioService.ts`    | Loads user bio from `~/.me.toon`     |
+| `src/models/poem.ts`        | Poem data structure                       |
+| `src/cli/index.ts`          | Command-line interface                    |
+| `src/services/configService.ts` | Loads/saves `.poet` config files    |
 
-## Development
+---
+
+## 🛠️ Development
 
 ### Build
 
@@ -172,9 +210,9 @@ Ollama API (local LLM)
 pnpm build
 ```
 
-Compiles TypeScript to `dist/` (ES2022, source maps included).
+Compiles TypeScript to `dist/` (ES2022 target, with source maps).
 
-### Run Locally
+### Run Locally (Dev Loop)
 
 ```bash
 pnpm dev
@@ -182,7 +220,7 @@ pnpm dev
 
 Builds and runs the CLI in one command.
 
-### Link to Local PATH
+### Link to Your PATH
 
 ```bash
 pnpm run link
@@ -196,25 +234,29 @@ Makes `poet` available globally as a shell command.
 pnpm test
 ```
 
-Runs Jest test suite (configured with ts-jest).
+Runs the Jest test suite (configured with ts-jest).
 
-### Single Test
+#### Run a Single Test
 
 ```bash
 pnpm test -- --testNamePattern="<test name>"
 ```
 
-## Configuration
+---
+
+## ⚙️ Configuration
 
 ### Settings: `.poet` File
 
-The `.poet` config file stores your default poem generation settings:
+The `.poet` config file stores your default poem generation settings.
 
 **Location:**
+
 - **Linux/Mac**: `~/.poet`
 - **Windows**: `%USERPROFILE%\.poet`
 
 **Example:**
+
 ```json
 {
   "model": "mistral",
@@ -225,24 +267,28 @@ The `.poet` config file stores your default poem generation settings:
 }
 ```
 
-All CLI flags override config file settings.
+CLI flags always override config file settings.
 
 ### Bio: `.me.toon` File
 
-The `.me.toon` file contains your biographical information, used to personalize generated poems:
+The `.me.toon` file contains your biographical information, used to personalize generated poems.
 
 **Location:**
+
 - **Linux/Mac**: `~/.me.toon`
 - **Windows**: `%USERPROFILE%\.me.toon`
 
 **Example:**
-```
+
+```text
 A poet living in Portland, deeply inspired by rain and small moments of wonder
 ```
 
-Keep it concise (1-2 sentences) for best results. This will be automatically loaded and used in poem generation.
+Keep it concise (1–2 sentences) for best results. This is loaded automatically and used in poem generation prompts.
 
-## Examples
+---
+
+## 🎛️ Examples
 
 ### Generate a Haiku
 
@@ -250,8 +296,9 @@ Keep it concise (1-2 sentences) for best results. This will be automatically loa
 poet create --style "Haiku" --theme "Seasons"
 ```
 
-**Output:**
-```
+**Example Output:**
+
+```text
 Title: Winter's Silence
 --------------------
 Snowflakes gently fall
@@ -267,8 +314,9 @@ Quiet beauty rests
 poet create --style "Limerick" --theme "Humor"
 ```
 
-**Output:**
-```
+**Example Output:**
+
+```text
 Title: A Curious Tale
 --------------------
 There once was a coder named Fred
@@ -310,20 +358,26 @@ poet create --theme "Science"
 # The generated poem will reflect your perspective as an engineer fascinated by physics
 ```
 
-## Requirements
+---
+
+## ✅ Requirements
 
 - **Ollama** must be running (defaults to `http://localhost:11434`)
-- At least one model installed (run `ollama pull mistral` to start)
+- At least one model installed (for example: `ollama pull mistral`)
 - Node 18+
 
-## Troubleshooting
+---
+
+## 🩺 Troubleshooting
 
 **"No models found" error**
+
 ```bash
 ollama pull mistral
 ```
 
 **Ollama not running**
+
 ```bash
 # Start Ollama (macOS)
 open /Applications/Ollama.app
@@ -333,10 +387,13 @@ ollama serve
 ```
 
 **Model taking too long**
+
 - Try a smaller model: `ollama pull phi` or `ollama pull neural-chat`
 - Check your system resources
 
-## Tech Stack
+---
+
+## 🧱 Tech Stack
 
 - **CLI Framework**: Commander.js
 - **LLM Client**: Ollama Node.js SDK
@@ -344,17 +401,22 @@ ollama serve
 - **Testing**: Jest + ts-jest
 - **Package Manager**: pnpm
 
-## License
+---
 
-ISC
+## 🤝 Contributing
 
-## Contributing
+Contributions are welcome. The codebase is intentionally small and modular so you can:
 
-Contributions welcome! The codebase is structured for easy extension:
 - Add new `LlmService` implementations for other APIs
 - Extend `PoetAgent` with new generation strategies
 - Add more built-in themes, styles, or completion rules
 
 ---
 
-Made with ✒️ and 🤖
+## 📄 License
+
+ISC
+
+---
+
+Made with ✒️, TypeScript, and an unreasonable amount of curiosity about what happens when you give an LLM a metronome instead of a chat box.
