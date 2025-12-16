@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm build` - Compile TypeScript to JavaScript (outputs to `dist/`)
 - `pnpm start` - Run the compiled CLI application
 - `pnpm dev` - Build and run in one command
+- `pnpm run link` - Build, make executable, and link to `~/.local/bin/poet` for global CLI access
 - `pnpm test` - Run Jest test suite (configured with ts-jest)
 
 ### CLI Usage
